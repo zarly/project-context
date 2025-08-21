@@ -7,33 +7,51 @@ set -euo pipefail
 #   project-context [path]   # if installed as an npm bin or linked
 
 DIR="${1:-.}"
-echo "DIR=$DIR"
+
+# Resolve location of this script reliably, even if invoked via symlink.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# package root is parent of bin/
+PKG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Ensure we're running in target project dir (default cwd)
+# so that projectContext will read files relative to this directory.
 cd "$DIR"
+
+# Export package root so the embedded node script can require files from package installation
+export PROJECT_CONTEXT_ROOT="$PKG_ROOT"
 
 node <<'NODE'
 (async () => {
   try {
+    const path = require('path');
+    const root = process.env.PROJECT_CONTEXT_ROOT;
+    if (!root) {
+      console.error('Error: PROJECT_CONTEXT_ROOT not set');
+      process.exit(2);
+    }
+
     let mod;
     try {
-      // Prefer compiled JS
-      mod = require('./projectContext.js');
+      // Prefer compiled JS from the package root
+      mod = require(path.join(root, 'projectContext.js'));
     } catch (e) {
       try {
         // Fallback to TypeScript module if ts-node is available
         require('ts-node/register');
-        mod = require('./projectContext');
+        mod = require(path.join(root, 'projectContext'));
       } catch (err) {
-        console.error('Error: cannot load ./projectContext.js or run TypeScript. Run `npm run build` or install ts-node.');
+        console.error('Error: cannot load projectContext from package. Run `npm run build` or install ts-node.');
         process.exit(2);
       }
     }
 
     const fn = mod.projectContext || mod.default;
     if (!fn || typeof fn !== 'function') {
-      console.error('projectContext function not found in ./projectContext');
+      console.error('projectContext function not found in package');
       process.exit(3);
     }
 
+    // run on current directory (we already cd'd into target dir above)
     const out = await fn(process.cwd(), { limit: 1_000_000 });
     if (out) process.stdout.write(out);
   } catch (err) {
