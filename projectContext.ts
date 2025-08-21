@@ -1,5 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import micromatch from 'micromatch';
 
 export interface ProjectContextOptions {
@@ -11,7 +11,7 @@ export interface ProjectContextOptions {
 type MarkdownParts = string[];
 
 const DEFAULT_INCLUDE = ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.json', '**/*.md', '**/*.txt'];
-const DEFAULT_EXCLUDE = ['node_modules', 'dist', 'build', 'out', 'coverage', '.git'];
+const DEFAULT_EXCLUDE = ['node_modules', 'dist', 'build', 'out', 'coverage', '.git', 'package-lock.json'];
 
 async function collectFiles(root: string): Promise<string[]> {
   const files: string[] = [];

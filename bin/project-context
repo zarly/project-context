@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# project-context - CLI wrapper that prints project context (Markdown) for the given directory (or current dir)
+# Usage:
+#   ./project-context [path]
+#   project-context [path]   # if installed as an npm bin or linked
+
+DIR="${1:-.}"
+echo "DIR=$DIR"
+cd "$DIR"
+
+node <<'NODE'
+(async () => {
+  try {
+    let mod;
+    try {
+      // Prefer compiled JS
+      mod = require('./projectContext.js');
+    } catch (e) {
+      try {
+        // Fallback to TypeScript module if ts-node is available
+        require('ts-node/register');
+        mod = require('./projectContext');
+      } catch (err) {
+        console.error('Error: cannot load ./projectContext.js or run TypeScript. Run `npm run build` or install ts-node.');
+        process.exit(2);
+      }
+    }
+
+    const fn = mod.projectContext || mod.default;
+    if (!fn || typeof fn !== 'function') {
+      console.error('projectContext function not found in ./projectContext');
+      process.exit(3);
+    }
+
+    const out = await fn(process.cwd(), { limit: 1_000_000 });
+    if (out) process.stdout.write(out);
+  } catch (err) {
+    console.error(err && err.stack ? err.stack : err);
+    process.exit(1);
+  }
+})();
+NODE

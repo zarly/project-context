@@ -1,11 +1,18 @@
 {
   "name": "project-context",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Собирает структуру проекта и содержимое файлов в Markdown для формирования контекстных подсказок (prompts).",
   "main": "projectContext.js",
   "types": "projectContext.d.ts",
+  "bin": {
+    "project-context": "./bin/project-context"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zarly/project-context.git"
+  },
   "scripts": {
-    "test": "vitest",
+    "test": "vitest --run",
     "build": "tsc"
   },
   "keywords": [
@@ -24,6 +31,7 @@
   },
   "devDependencies": {
     "@types/micromatch": "4.0.9",
+    "@types/node": "24.3.0",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
   }
