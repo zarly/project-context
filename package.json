@@ -1,0 +1,30 @@
+{
+  "name": "project-context",
+  "version": "1.0.0",
+  "description": "Собирает структуру проекта и содержимое файлов в Markdown для формирования контекстных подсказок (prompts).",
+  "main": "projectContext.js",
+  "types": "projectContext.d.ts",
+  "scripts": {
+    "test": "vitest",
+    "build": "tsc"
+  },
+  "keywords": [
+    "project",
+    "context",
+    "markdown",
+    "prompt",
+    "llm",
+    "project-context",
+    "developer-tools"
+  ],
+  "author": "Alexander Abramov",
+  "license": "MIT",
+  "dependencies": {
+    "micromatch": "4.0.8"
+  },
+  "devDependencies": {
+    "@types/micromatch": "4.0.9",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}
