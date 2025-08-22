@@ -1,62 +1,84 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env node
 
-# project-context - CLI wrapper that prints project context (Markdown) for the given directory (or current dir)
-# Usage:
-#   ./project-context [path]
-#   project-context [path]   # if installed as an npm bin or linked
+const path = require('path');
 
-DIR="${1:-.}"
-
-# Resolve location of this script reliably, even if invoked via symlink.
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# package root is parent of bin/
-PKG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Ensure we're running in target project dir (default cwd)
-# so that projectContext will read files relative to this directory.
-cd "$DIR"
-
-# Export package root so the embedded node script can require files from package installation
-export PROJECT_CONTEXT_ROOT="$PKG_ROOT"
-
-node <<'NODE'
 (async () => {
+  const args = process.argv.slice(2);
+  const dir = args[0];
+
+  let mod;
   try {
-    const path = require('path');
-    const root = process.env.PROJECT_CONTEXT_ROOT;
-    if (!root) {
-      console.error('Error: PROJECT_CONTEXT_ROOT not set');
-      process.exit(2);
-    }
-
-    let mod;
+    // try compiled JS first
+    mod = require(path.join(__dirname, '..', 'projectContext.js'));
+  } catch (e1) {
     try {
-      // Prefer compiled JS from the package root
-      mod = require(path.join(root, 'projectContext.js'));
-    } catch (e) {
+      // try to load TS via ts-node if available
+      require('ts-node/register');
+      mod = require(path.join(__dirname, '..', 'projectContext.ts'));
+    } catch (e2) {
+      console.error('Unable to load projectContext. Run `npm run build` or install `ts-node`.');
+      process.exit(1);
+    }
+  }
+
+  const projectContext = mod.projectContext || mod.default;
+  if (typeof projectContext !== 'function') {
+    console.error('projectContext export not found');
+    process.exit(1);
+  }
+
+  try {
+    const out = await projectContext(dir, { limit: 1_000_000 });
+
+    // write to stdout
+    process.stdout.write(out);
+
+    // try to copy to clipboard
+    let copied = false;
+
+    try {
+      // prefer clipboardy if installed
       try {
-        // Fallback to TypeScript module if ts-node is available
-        require('ts-node/register');
-        mod = require(path.join(root, 'projectContext'));
+        const clipboardy = require('clipboardy');
+        // prefer synchronous write to avoid hanging
+        if (clipboardy && typeof clipboardy.writeSync === 'function') {
+          clipboardy.writeSync(out);
+        } else if (clipboardy && typeof clipboardy.write === 'function') {
+          await clipboardy.write(out);
+        }
+        copied = true;
       } catch (err) {
-        console.error('Error: cannot load projectContext from package. Run `npm run build` or install ts-node.');
-        process.exit(2);
+        // fallback to platform utilities
+        const { spawnSync } = require('child_process');
+        const platform = process.platform;
+        if (platform === 'darwin') {
+          const p = spawnSync('pbcopy', [], { input: out, encoding: 'utf8' });
+          if (p.status === 0) copied = true;
+        } else if (platform === 'win32') {
+          const p = spawnSync('clip', [], { input: out, encoding: 'utf8' });
+          if (p.status === 0) copied = true;
+        } else {
+          // try xclip and xsel
+          let p = spawnSync('xclip', ['-selection', 'clipboard'], { input: out, encoding: 'utf8' });
+          if (p.status === 0) copied = true;
+          else {
+            p = spawnSync('xsel', ['--clipboard', '--input'], { input: out, encoding: 'utf8' });
+            if (p.status === 0) copied = true;
+          }
+        }
       }
+    } catch (e) {
+      // ignore clipboard errors
     }
 
-    const fn = mod.projectContext || mod.default;
-    if (!fn || typeof fn !== 'function') {
-      console.error('projectContext function not found in package');
-      process.exit(3);
+    if (copied) {
+      // send notice to stderr to avoid polluting stdout
+      console.error('Output also copied to clipboard');
+    } else {
+      console.error('Output NOT copied to clipboard. Install "clipboardy" or ensure pbcopy/clip/xclip/xsel is available.');
     }
-
-    // run on current directory (we already cd'd into target dir above)
-    const out = await fn(process.cwd(), { limit: 1_000_000 });
-    if (out) process.stdout.write(out);
   } catch (err) {
-    console.error(err && err.stack ? err.stack : err);
+    console.error('Error generating project context:', err && err.message ? err.message : err);
     process.exit(1);
   }
 })();
-NODE

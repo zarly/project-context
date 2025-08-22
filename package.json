@@ -1,6 +1,6 @@
 {
   "name": "project-context",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Собирает структуру проекта и содержимое файлов в Markdown для формирования контекстных подсказок (prompts).",
   "main": "projectContext.js",
   "types": "projectContext.d.ts",
@@ -27,11 +27,13 @@
   "author": "Alexander Abramov",
   "license": "MIT",
   "dependencies": {
+    "clipboardy": "4.0.0",
     "micromatch": "4.0.8"
   },
   "devDependencies": {
     "@types/micromatch": "4.0.9",
     "@types/node": "24.3.0",
+    "ts-node": "10.9.2",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
   }
