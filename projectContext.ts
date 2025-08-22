@@ -10,8 +10,8 @@ export interface ProjectContextOptions {
 
 type MarkdownParts = string[];
 
-const DEFAULT_INCLUDE = ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.json', '**/*.md', '**/*.txt'];
-const DEFAULT_EXCLUDE = ['node_modules', 'dist', 'build', 'out', 'coverage', '.git', 'package-lock.json'];
+const DEFAULT_INCLUDE = ['**/*.ts', '**/*.tsx', '**/*.vue', '**/*.json', '**/*.md', '.editorconfig'];
+const DEFAULT_EXCLUDE = ['node_modules', 'dist', 'build', 'out', 'coverage', '.git', 'package-lock.json', 'LICENSE'];
 
 async function collectFiles(root: string): Promise<string[]> {
   const files: string[] = [];
@@ -85,10 +85,6 @@ async function fileSection(filePath: string, root: string): Promise<string> {
   return `## ${rel}\n\n\`\`\`\n${content}\n\`\`\`\n`;
 }
 
-function headerFor(root: string): string {
-  return `# Project context for ${path.basename(root)}\n`;
-}
-
 function joinParts<T extends string[]>(parts: T): string {
   return parts.join('\n');
 }
@@ -104,7 +100,6 @@ export async function projectContext(dir?: string, options: ProjectContextOption
   const files = await collectFiles(root);
 
   const parts: MarkdownParts = [];
-  parts.push(headerFor(root));
 
   // sort for deterministic output
   files.sort();

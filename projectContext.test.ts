@@ -7,16 +7,16 @@ import { projectContext } from './projectContext';
 describe('projectContext', () => {
   it('returns markdown listing structure and file contents', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'projctx-'));
-    fs.writeFileSync(path.join(tmp, 'a.txt'), 'hello');
+    fs.writeFileSync(path.join(tmp, 'a.ts'), 'hello');
     fs.mkdirSync(path.join(tmp, 'sub'), { recursive: true });
-    fs.writeFileSync(path.join(tmp, 'sub', 'b.txt'), 'world');
+    fs.writeFileSync(path.join(tmp, 'sub', 'b.ts'), 'world');
 
     const res = await projectContext(tmp);
 
     expect(typeof res).toBe('string');
-    expect(res).toContain('a.txt');
+    expect(res).toContain('a.ts');
     expect(res).toContain('hello');
-    expect(res).toContain('sub/b.txt');
+    expect(res).toContain('sub/b.ts');
     expect(res).toContain('world');
   });
 
